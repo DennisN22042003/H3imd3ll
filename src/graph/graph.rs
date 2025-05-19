@@ -1,12 +1,18 @@
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use std::collections::HashMap;
+use std::io::Write;
+use std::fs::File;
+use std::fs;
+use serde_json;
 
-use uuid::Uuid;
+use crate::graph::fact::{Fact, FactStore};
 use crate::graph::{Entity, Relationship};
+use uuid::Uuid;
 
 pub struct GraphDb {
     graph: StableDiGraph<Entity, Relationship>, // The actual petgraph graph, storing entities as nodes and relationships as edges.
-    uuid_index_map: HashMap<Uuid, NodeIndex>    // A lookup table that maps each Entity's UUID to its corresponding node in the graph(without this we'd need to search the whole graph to find a node).
+    uuid_index_map: HashMap<Uuid, NodeIndex>, // A lookup table that maps each Entity's UUID to its corresponding node in the graph(without this we'd need to search the whole graph to find a node).
+    event_log: Vec<Fact>, // Stores all facts
 }
 
 impl GraphDb {
@@ -15,6 +21,7 @@ impl GraphDb {
         GraphDb {
             graph: StableDiGraph::new(),
             uuid_index_map: HashMap::new(),
+            event_log: Vec::new(),
         }
     }
 
@@ -84,7 +91,10 @@ impl GraphDb {
         let mut neighbors = Vec::new();
 
         if let Some(&node_idx) = self.uuid_index_map.get(uuid) {
-            for neighbor in self.graph.neighbors_directed(node_idx, petgraph::Direction::Incoming) {
+            for neighbor in self
+                .graph
+                .neighbors_directed(node_idx, petgraph::Direction::Incoming)
+            {
                 if let Some(entity) = self.graph.node_weight(neighbor) {
                     neighbors.push(entity);
                 }
@@ -93,7 +103,121 @@ impl GraphDb {
 
         neighbors
     }
+    
+    pub fn add_fact(&mut self, fact_store: FactStore) {
+        for entity in fact_store.entities {
+            self.add_entity(entity);
+        }
+        
+        for fact in fact_store.relationships.clone() {
+            match &fact {
+                Fact::RelationshipAdded {
+                    source_id,
+                    target_id,
+                    relationship_type,
+                    valid_from,
+                    valid_to,
+                } => {
+                    let relationship = Relationship {
+                        source_id: *source_id,
+                        target_id: *target_id,
+                        relationship_type: relationship_type.parse().unwrap(),
+                        valid_from: *valid_from,
+                        valid_to: *valid_to
+                    };
+                    self.add_relationship(relationship);
+                }
+                _ => {
+                    // Handle other variants like EntityCreated, etc.
+                }
+            }
+            // Persist every fact
+            self.event_log.push(fact);
+        }
+    }
+    
+    pub fn persist_facts(&self, path: &str) -> std::io::Result<()> {
+        let serialized = serde_json::to_string_pretty(&self.event_log)?;
+        let mut file = File::create(path)?;
+        file.write_all(serialized.as_bytes())?;
+        Ok(())
+    }
+    
+    pub fn load_from_file(path: &str) -> std::io::Result<Self> {
+        let content = fs::read_to_string(path)?;
+        let event_log: Vec<Fact> = serde_json::from_str(&content)?;
+        
+        let mut db = GraphDb::new();
+        for fact in event_log.iter() {
+            // Optionally repackage into FactStore or dispatch manually
+            match fact {
+                Fact::RelationshipAdded {
+                    source_id,
+                    target_id,
+                    relationship_type,
+                    valid_from,
+                    valid_to,
+                } => {
+                    db.event_log.push(fact.clone());
+                    db.add_fact(FactStore {
+                        entities: vec![],
+                        relationships: vec![fact.clone()],
+                    });
+                }
+                _ => {
+                    // Extend support for EntityCreated, etc.
+                }
+            }
+        }
+        
+        Ok(db)
+    }
 }
 
-// Keeps a Stable Directed Graph of Entities and Relationships
-// A HashMap to track where each Entity(by UUID) lives in the graph
+#[cfg(test)]
+mod tests {
+    use std::fmt::Debug;
+    use super::*;
+    use crate::graph::{EntityType, RelationshipType};
+    use crate::graph::fact::{Fact, FactStore};
+
+    #[test]
+    fn test_graph_db_basic_flow() {
+        let mut db = GraphDb::new();
+
+        let e1 = Entity {
+            id: Uuid::new_v4(),
+            name: "John Doe".into(),
+            entity_type: EntityType::Person,
+        };
+
+        let e2 = Entity {
+            id: Uuid::new_v4(),
+            name: "Widgets Inc".into(),
+            entity_type: EntityType::Company,
+        };
+
+        let relationship = Fact::RelationshipAdded {
+            source_id: e1.id,
+            target_id: e2.id,
+            relationship_type: RelationshipType::WorksAt.to_string(),
+            valid_from: 2021,
+            valid_to: None,
+        };
+
+        let store = FactStore {
+            entities: vec![e1.clone(), e2.clone()],
+            relationships: vec![relationship],
+        };
+
+        db.add_fact(store);
+
+        let outgoing = db.get_outgoing_neighbours(&e1.id);
+        let incoming = db.get_incoming_neighbours(&e2.id);
+
+        assert_eq!(outgoing.len(), 1);
+        assert_eq!(incoming.len(), 1);
+        assert_eq!(outgoing[0].name, "Widgets Inc");
+        assert_eq!(incoming[0].name, "John Doe");
+    }
+}

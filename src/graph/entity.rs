@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EntityType {
     Person,
     PhoneNumber,
@@ -12,7 +12,7 @@ pub enum EntityType {
     Event,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entity {
     pub id: Uuid,
     pub name: String,

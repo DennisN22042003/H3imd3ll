@@ -1,9 +1,10 @@
-pub mod entity;
-pub mod relationship;
-pub mod graph;
 pub mod enrichment;
+pub mod entity;
+mod fact;
+pub mod graph;
+pub mod relationship;
 
-pub use entity::*;
-pub use relationship::*;
-pub use graph::*;
 pub use enrichment::*;
+pub use entity::*;
+pub use graph::*;
+pub use relationship::*;
