@@ -1,6 +1,8 @@
 use std::io::{self, Write};
 use std::str::FromStr;
 use uuid::Uuid;
+use chrono::prelude::*;
+
 use crate::graph::{EntityType, RelationshipType, Entity, Relationship};
 use crate::graph::fact::{Fact, FactStore};
 use crate::graph::GraphDb;
@@ -94,6 +96,8 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                 }
                 let subject_entity = subject_entity.unwrap();
                 let object_entity = object_entity.unwrap();
+                
+                let local_time: DateTime<Local> = Local::now();
 
                 match RelationshipType::from_str(predicate) {
                     Ok(rel_type) => {
@@ -101,6 +105,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                             source_id: subject_entity.id,
                             target_id: object_entity.id,
                             relationship_type: rel_type.to_string(),
+                            timestamp: local_time,
                             valid_from: 2025, // Or current year / configurable
                             valid_to: None,
                         };

@@ -1,18 +1,10 @@
 [
   {
     "RelationshipAdded": {
-      "source_id": "079293f7-4a6d-4125-8e67-4e6468220929",
-      "target_id": "be57ad24-d1fc-4176-80db-f6b83a1cf233",
-      "relationship_type": "WorksAt",
-      "valid_from": 2025,
-      "valid_to": null
-    }
-  },
-  {
-    "RelationshipAdded": {
-      "source_id": "079293f7-4a6d-4125-8e67-4e6468220929",
-      "target_id": "e8fe79c8-f648-4352-bba4-8e53131e176b",
+      "source_id": "818bbb59-1b13-4eaf-b70d-b3e01aabada8",
+      "target_id": "c7bc9b05-77fe-4619-bbcd-e492c94286ef",
       "relationship_type": "LocatedAt",
+      "timestamp": "2025-05-19T16:57:55.805946900+03:00",
       "valid_from": 2025,
       "valid_to": null
     }

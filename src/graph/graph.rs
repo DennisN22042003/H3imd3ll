@@ -103,18 +103,19 @@ impl GraphDb {
 
         neighbors
     }
-    
+
     pub fn add_fact(&mut self, fact_store: FactStore) {
         for entity in fact_store.entities {
             self.add_entity(entity);
         }
-        
+
         for fact in fact_store.relationships.clone() {
             match &fact {
                 Fact::RelationshipAdded {
                     source_id,
                     target_id,
                     relationship_type,
+                    timestamp,
                     valid_from,
                     valid_to,
                 } => {
@@ -135,18 +136,18 @@ impl GraphDb {
             self.event_log.push(fact);
         }
     }
-    
+
     pub fn persist_facts(&self, path: &str) -> std::io::Result<()> {
         let serialized = serde_json::to_string_pretty(&self.event_log)?;
         let mut file = File::create(path)?;
         file.write_all(serialized.as_bytes())?;
         Ok(())
     }
-    
+
     pub fn load_from_file(path: &str) -> std::io::Result<Self> {
         let content = fs::read_to_string(path)?;
         let event_log: Vec<Fact> = serde_json::from_str(&content)?;
-        
+
         let mut db = GraphDb::new();
         for fact in event_log.iter() {
             // Optionally repackage into FactStore or dispatch manually
@@ -155,6 +156,7 @@ impl GraphDb {
                     source_id,
                     target_id,
                     relationship_type,
+                    timestamp,
                     valid_from,
                     valid_to,
                 } => {
@@ -169,7 +171,7 @@ impl GraphDb {
                 }
             }
         }
-        
+
         Ok(db)
     }
 }
@@ -177,9 +179,11 @@ impl GraphDb {
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;
+    use chrono::Local;
     use super::*;
     use crate::graph::{EntityType, RelationshipType};
     use crate::graph::fact::{Fact, FactStore};
+    use chrono::prelude::DateTime;
 
     #[test]
     fn test_graph_db_basic_flow() {
@@ -201,6 +205,7 @@ mod tests {
             source_id: e1.id,
             target_id: e2.id,
             relationship_type: RelationshipType::WorksAt.to_string(),
+            timestamp: DateTime::from(Local::now()),
             valid_from: 2021,
             valid_to: None,
         };
