@@ -1,0 +1,149 @@
+use std::io::{self, Write};
+use std::str::FromStr;
+use uuid::Uuid;
+use crate::graph::{EntityType, RelationshipType, Entity, Relationship};
+use crate::graph::fact::{Fact, FactStore};
+use crate::graph::GraphDb;
+
+fn find_entity_by_name<'a>(db: &'a GraphDb, name: &str) -> Option<&'a Entity> {
+    db.graph.node_weights().find(|e| e.name == name)
+}
+
+pub fn run_h3imd3ll_repl() -> io::Result<()> {
+    let mut db = GraphDb::new();
+    let data_file = "graph_data.json";
+
+    // Load existing data if any
+    if std::path::Path::new(data_file).exists() {
+        match GraphDb::load_from_file(data_file) {
+            Ok(loaded_db) => {
+                db = loaded_db;
+                println!("Loaded graph from {}", data_file);
+            }
+            Err(e) => println!("Failed to load graph from file: {}", e),
+        }
+    }
+
+    let stdin = io::stdin();
+    let mut stdout = io::stdout();
+    let mut input = String::new();
+
+    loop {
+        input.clear();
+        print!("h3imd3ll> ");
+        stdout.flush()?;  // Make sure prompt is printed
+
+        if stdin.read_line(&mut input)? == 0 {
+            // EOF (Ctrl+D)
+            println!("\nExiting...");
+            break;
+        }
+
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            continue; // ignore empty lines
+        }
+
+        // Split input into command and args
+        let mut parts = trimmed.split_whitespace();
+        let cmd = parts.next().unwrap();
+        let args: Vec<&str> = parts.collect();
+
+        match cmd.to_lowercase().as_str() {
+            "add-entity" => {
+                if args.len() < 2 {
+                    println!("Usage: addentity <name> <entity_type>");
+                    continue;
+                }
+                let name = args[0];
+                let entity_type_str = args[1];
+                match EntityType::from_str(entity_type_str) {
+                    Ok(etype) => {
+                        let entity = Entity {
+                            id: Uuid::new_v4(),
+                            name: name.to_string(),
+                            entity_type: etype,
+                        };
+                        db.add_entity(entity);
+                        println!("Entity added.");
+                    }
+                    Err(_) => {
+                        println!("Invalid entity type: {}", entity_type_str);
+                    }
+                }
+            }
+            "add-fact" => {
+                if args.len() < 3 {
+                    println!("Usage: addfact <subject> <predicate> <object>");
+                    continue;
+                }
+                let subject = args[0];
+                let predicate = args[1];
+                let object = args[2];
+
+                let subject_entity = find_entity_by_name(&db, subject);
+                let object_entity = find_entity_by_name(&db, object);
+
+                if subject_entity.is_none() || object_entity.is_none() {
+                    println!("Subject or object entity not found.");
+                    continue;
+                }
+                let subject_entity = subject_entity.unwrap();
+                let object_entity = object_entity.unwrap();
+
+                match RelationshipType::from_str(predicate) {
+                    Ok(rel_type) => {
+                        let relationship = Relationship {
+                            source_id: subject_entity.id,
+                            target_id: object_entity.id,
+                            relationship_type: rel_type,
+                            valid_from: 2025, // Or current year / configurable
+                            valid_to: None,
+                        };
+                        db.add_relationship(relationship);
+                        println!("Relationship added.");
+                    }
+                    Err(_) => {
+                        println!("Invalid relationship type: {}", predicate);
+                    }
+                }
+            }
+            "query" => {
+                println!("Query feature is not implemented yet.");
+            }
+            "save" => {
+                match db.persist_facts(data_file) {
+                    Ok(_) => println!("Graph saved to {}", data_file),
+                    Err(e) => println!("Failed to save graph: {}", e),
+                }
+            }
+            "load" => {
+                match GraphDb::load_from_file(data_file) {
+                    Ok(loaded_db) => {
+                        db = loaded_db;
+                        println!("Graph loaded from {}", data_file);
+                    }
+                    Err(e) => println!("Failed to load graph: {}", e),
+                }
+            }
+            "help" => {
+                println!("Available commands:");
+                println!("  add-entity <name> <entity_type>");
+                println!("  add-fact <subject> <predicate> <object>");
+                println!("  query <query>");
+                println!("  save");
+                println!("  load");
+                println!("  exit");
+            }
+            "exit" | "quit" => {
+                println!("Exiting...");
+                break;
+            }
+            _ => {
+                println!("Unknown command '{}'. Type 'help' for a list of commands.", cmd);
+            }
+        }
+    }
+
+    Ok(())
+}

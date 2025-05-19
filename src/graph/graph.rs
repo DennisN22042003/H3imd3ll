@@ -10,7 +10,7 @@ use crate::graph::{Entity, Relationship};
 use uuid::Uuid;
 
 pub struct GraphDb {
-    graph: StableDiGraph<Entity, Relationship>, // The actual petgraph graph, storing entities as nodes and relationships as edges.
+    pub graph: StableDiGraph<Entity, Relationship>, // The actual petgraph graph, storing entities as nodes and relationships as edges.
     uuid_index_map: HashMap<Uuid, NodeIndex>, // A lookup table that maps each Entity's UUID to its corresponding node in the graph(without this we'd need to search the whole graph to find a node).
     event_log: Vec<Fact>, // Stores all facts
 }

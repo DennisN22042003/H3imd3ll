@@ -1,4 +1,6 @@
 mod graph;
+mod cli;
+
 fn main() {
-    println!("Hello, world!");
+    cli::run_cli();
 }
