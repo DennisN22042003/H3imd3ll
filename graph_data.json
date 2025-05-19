@@ -8,5 +8,35 @@
       "valid_from": 2025,
       "valid_to": null
     }
+  },
+  {
+    "RelationshipAdded": {
+      "source_id": "818bbb59-1b13-4eaf-b70d-b3e01aabada8",
+      "target_id": "c7bc9b05-77fe-4619-bbcd-e492c94286ef",
+      "relationship_type": "LocatedAt",
+      "timestamp": "2025-05-19T16:57:55.805946900+03:00",
+      "valid_from": 2025,
+      "valid_to": null
+    }
+  },
+  {
+    "RelationshipAdded": {
+      "source_id": "302ade8b-29be-4a8c-b62b-a2b7ecfcd0c3",
+      "target_id": "ee86fa96-e758-428a-9d22-07ad468d6c47",
+      "relationship_type": "LocatedAt",
+      "timestamp": "2025-05-19T17:31:04.346977500+03:00",
+      "valid_from": 2025,
+      "valid_to": null
+    }
+  },
+  {
+    "RelationshipAdded": {
+      "source_id": "205cbc1c-5b6c-4aed-a06c-bd1760a9b7aa",
+      "target_id": "ee86fa96-e758-428a-9d22-07ad468d6c47",
+      "relationship_type": "LocatedAt",
+      "timestamp": "2025-05-19T17:32:52.037073900+03:00",
+      "valid_from": 2025,
+      "valid_to": null
+    }
   }
 ]

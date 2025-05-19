@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::graph::RelationshipType;
@@ -12,6 +13,22 @@ pub enum EntityType {
     Place,
     Action,
     Event,
+    Unknown,
+}
+
+impl EntityType {
+    pub fn from_properties(props: &HashMap<String, String>) -> Self {
+        match props.get("type").map(String::as_str) {
+            Some("Person") => EntityType::Person,
+            Some("PhoneNumber") => EntityType::PhoneNumber,
+            Some("Email") => EntityType::Email,
+            Some("Company") => EntityType::Company,
+            Some("Place") => EntityType::Place,
+            Some("Action") => EntityType::Action,
+            Some("Event") => EntityType::Event,
+            _ => EntityType::Unknown,
+        }
+    }
 }
 
 
@@ -25,6 +42,7 @@ impl ToString for EntityType{
             EntityType::Place => "Place".to_string(),
             EntityType::Action => "Action".to_string(),
             EntityType::Event => "Event".to_string(),
+            EntityType::Unknown => "Unknown".to_string(),
         }
     }
 }
@@ -52,4 +70,5 @@ pub struct Entity {
     pub id: Uuid,
     pub name: String,
     pub entity_type: EntityType,
+    pub properties: HashMap<String, String>
 }

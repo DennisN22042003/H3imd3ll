@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::fs::File;
 use std::fs;
+use petgraph::prelude::EdgeRef;
 use serde_json;
 
 use crate::graph::fact::{Fact, FactStore};
-use crate::graph::{Entity, Relationship};
+use crate::graph::{Entity, EntityType, Relationship};
 use uuid::Uuid;
 
 pub struct GraphDb {
@@ -24,7 +25,7 @@ impl GraphDb {
             event_log: Vec::new(),
         }
     }
-
+    
     // Checks if this UUID already exists in the graph.
     // If not adds the Entity to the graph using add_node().
     // Gets back the NodeIndex and store it in the uuid_index_map.
@@ -111,6 +112,41 @@ impl GraphDb {
 
         for fact in fact_store.relationships.clone() {
             match &fact {
+                Fact::EntityCreated {
+                    entity_id,
+                    timestamp: _,
+                    properties,
+                } => {
+                    let entity = Entity {
+                        id: *entity_id,
+                        name: properties.get("name").cloned().unwrap_or_default(),
+                        entity_type: EntityType::from_properties(properties),
+                        properties: properties.clone(),
+                    };
+                    self.add_entity(entity);
+                }
+                Fact::EntityUpdated {
+                    entity_id,
+                    timestamp,
+                    updated_properties,
+                } => {
+                    if let Some(&node_idx) = self.uuid_index_map.get(entity_id) {
+                        if let Some(entity) = self.graph.node_weight_mut(node_idx) {
+                            for (k, v) in updated_properties {
+                                entity.properties.insert(k.clone(), v.clone());
+                            }
+                        }
+                    }
+                }
+                Fact::EntityDeleted {
+                    entity_id,
+                    timestamp,
+                } => {
+                    if let Some(&node_idx) = self.uuid_index_map.get(entity_id) {
+                        self.graph.remove_node(node_idx);
+                        self.uuid_index_map.remove(entity_id);
+                    }
+                }
                 Fact::RelationshipAdded {
                     source_id,
                     target_id,
@@ -128,8 +164,20 @@ impl GraphDb {
                     };
                     self.add_relationship(relationship);
                 }
-                _ => {
-                    // Handle other variants like EntityCreated, etc.
+                Fact::RelationshipInvalidated {
+                    source_id,
+                    target_id,
+                    timestamp,
+                } => {
+                    if let (Some(&src), Some(&tgt)) = (
+                        self.uuid_index_map.get(source_id), 
+                        self.uuid_index_map.get(target_id),
+                    ) {
+                        let edges: Vec<_> = self.graph.edges_connecting(src, tgt).map(|e| e.id()).collect();
+                        for edge in edges {
+                            self.graph.remove_edge(edge);
+                        }
+                    }
                 }
             }
             // Persist every fact
@@ -150,26 +198,10 @@ impl GraphDb {
 
         let mut db = GraphDb::new();
         for fact in event_log.iter() {
-            // Optionally repackage into FactStore or dispatch manually
-            match fact {
-                Fact::RelationshipAdded {
-                    source_id,
-                    target_id,
-                    relationship_type,
-                    timestamp,
-                    valid_from,
-                    valid_to,
-                } => {
-                    db.event_log.push(fact.clone());
-                    db.add_fact(FactStore {
-                        entities: vec![],
-                        relationships: vec![fact.clone()],
-                    });
-                }
-                _ => {
-                    // Extend support for EntityCreated, etc.
-                }
-            }
+            db.add_fact(FactStore {
+                entities: vec![],
+                relationships: vec![fact.clone()],
+            });
         }
 
         Ok(db)
@@ -193,12 +225,14 @@ mod tests {
             id: Uuid::new_v4(),
             name: "John Doe".into(),
             entity_type: EntityType::Person,
+            properties: HashMap::new(),
         };
 
         let e2 = Entity {
             id: Uuid::new_v4(),
             name: "Widgets Inc".into(),
             entity_type: EntityType::Company,
+            properties: HashMap::new(),
         };
 
         let relationship = Fact::RelationshipAdded {
