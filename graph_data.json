@@ -1,0 +1,20 @@
+[
+  {
+    "RelationshipAdded": {
+      "source_id": "079293f7-4a6d-4125-8e67-4e6468220929",
+      "target_id": "be57ad24-d1fc-4176-80db-f6b83a1cf233",
+      "relationship_type": "WorksAt",
+      "valid_from": 2025,
+      "valid_to": null
+    }
+  },
+  {
+    "RelationshipAdded": {
+      "source_id": "079293f7-4a6d-4125-8e67-4e6468220929",
+      "target_id": "e8fe79c8-f648-4352-bba4-8e53131e176b",
+      "relationship_type": "LocatedAt",
+      "valid_from": 2025,
+      "valid_to": null
+    }
+  }
+]

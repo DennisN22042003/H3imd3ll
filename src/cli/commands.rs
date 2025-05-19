@@ -52,7 +52,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
         match cmd.to_lowercase().as_str() {
             "add-entity" => {
                 if args.len() < 2 {
-                    println!("Usage: addentity <name> <entity_type>");
+                    println!("Usage: add-entity <name> <entity_type>");
                     continue;
                 }
                 let name = args[0];
@@ -64,8 +64,12 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                             name: name.to_string(),
                             entity_type: etype,
                         };
-                        db.add_entity(entity);
-                        println!("Entity added.");
+                        let fact_store = FactStore {
+                            entities: vec![entity.clone()],
+                            relationships: vec![],
+                        };
+                        db.add_fact(fact_store);
+                        println!("Entity '{}' added with ID {}", entity.name, entity.id);
                     }
                     Err(_) => {
                         println!("Invalid entity type: {}", entity_type_str);
@@ -74,7 +78,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
             }
             "add-fact" => {
                 if args.len() < 3 {
-                    println!("Usage: addfact <subject> <predicate> <object>");
+                    println!("Usage: add-fact <subject> <predicate> <object>");
                     continue;
                 }
                 let subject = args[0];
@@ -93,15 +97,20 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
 
                 match RelationshipType::from_str(predicate) {
                     Ok(rel_type) => {
-                        let relationship = Relationship {
+                        let relationship_fact = Fact::RelationshipAdded {
                             source_id: subject_entity.id,
                             target_id: object_entity.id,
-                            relationship_type: rel_type,
+                            relationship_type: rel_type.to_string(),
                             valid_from: 2025, // Or current year / configurable
                             valid_to: None,
                         };
-                        db.add_relationship(relationship);
-                        println!("Relationship added.");
+                        let fact_store = FactStore {
+                            entities: vec![],
+                            relationships: vec![relationship_fact],
+                        };
+                        
+                        db.add_fact(fact_store);
+                        println!("Relationship '{}' -> '{}' added.", subject, object);
                     }
                     Err(_) => {
                         println!("Invalid relationship type: {}", predicate);
