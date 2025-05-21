@@ -100,7 +100,6 @@ impl<'a> CaseBuilder<'a> {
     /// 
     /// Uses a HashSet to avoid duplicates and returns a Vec of unique entity UUIDs.
     fn collect_related_entities(&self) -> Vec<Uuid> {
-        use petgraph::visit::{Bfs, Walker};
         use std::collections::HashSet;
         
         // Result vector to collect related entity IDs
