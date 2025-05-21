@@ -1,20 +1,20 @@
 use crate::graph::Entity;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use chrono::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, Clone, Serialize, Deserialize, PartialEq, Hash)]
 pub enum Fact {
     EntityCreated {
         entity_id: Uuid,
         timestamp: DateTime<Local>,
-        properties: HashMap<String, String>,
+        properties: BTreeMap<String, String>,
     },
     EntityUpdated {
         entity_id: Uuid,
         timestamp: DateTime<Local>,
-        updated_properties: HashMap<String, String>,
+        updated_properties: BTreeMap<String, String>,
     },
     EntityDeleted {
         entity_id: Uuid,
@@ -33,6 +33,35 @@ pub enum Fact {
         target_id: Uuid,
         timestamp: DateTime<Local>,
     },
+}
+
+impl Fact {
+    pub fn timestamp(&self) -> DateTime<Utc> {
+        match self {
+            Fact::EntityCreated { timestamp, .. }
+            | Fact::EntityUpdated { timestamp, .. }
+            | Fact::EntityDeleted { timestamp, .. }
+            | Fact::RelationshipAdded { timestamp, .. }
+            | Fact::RelationshipInvalidated { timestamp, .. } => timestamp.with_timezone(&Utc),
+        }
+    }
+}
+
+
+impl Fact {
+    pub fn involves_any(&self, entity_ids: &[Uuid]) -> bool {
+        match self {
+            Fact::EntityCreated { entity_id, .. }
+            | Fact::EntityUpdated { entity_id, .. }
+            | Fact::EntityDeleted { entity_id, .. } => {
+                entity_ids.contains(entity_id)
+            }
+            Fact::RelationshipAdded { source_id, target_id, .. }
+            | Fact::RelationshipInvalidated { source_id, target_id, .. } => {
+                entity_ids.contains(source_id) || entity_ids.contains(target_id)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,10 +1,10 @@
 use std::str::FromStr;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::graph::RelationshipType;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum EntityType {
     Person,
     PhoneNumber,
@@ -17,7 +17,7 @@ pub enum EntityType {
 }
 
 impl EntityType {
-    pub fn from_properties(props: &HashMap<String, String>) -> Self {
+    pub fn from_properties(props: &BTreeMap<String, String>) -> Self {
         match props.get("type").map(String::as_str) {
             Some("Person") => EntityType::Person,
             Some("PhoneNumber") => EntityType::PhoneNumber,
@@ -70,5 +70,5 @@ pub struct Entity {
     pub id: Uuid,
     pub name: String,
     pub entity_type: EntityType,
-    pub properties: HashMap<String, String>
+    pub properties: BTreeMap<String, String>
 }

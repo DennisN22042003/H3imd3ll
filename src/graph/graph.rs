@@ -12,8 +12,8 @@ use uuid::Uuid;
 
 pub struct GraphDb {
     pub graph: StableDiGraph<Entity, Relationship>, // The actual petgraph graph, storing entities as nodes and relationships as edges.
-    uuid_index_map: HashMap<Uuid, NodeIndex>, // A lookup table that maps each Entity's UUID to its corresponding node in the graph(without this we'd need to search the whole graph to find a node).
-    event_log: Vec<Fact>, // Stores all facts
+    pub uuid_index_map: HashMap<Uuid, NodeIndex>, // A lookup table that maps each Entity's UUID to its corresponding node in the graph(without this we'd need to search the whole graph to find a node).
+    pub(crate) event_log: Vec<Fact>, // Stores all facts
 }
 
 impl GraphDb {
@@ -210,6 +210,7 @@ impl GraphDb {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use std::fmt::Debug;
     use chrono::Local;
     use super::*;
@@ -225,14 +226,14 @@ mod tests {
             id: Uuid::new_v4(),
             name: "John Doe".into(),
             entity_type: EntityType::Person,
-            properties: HashMap::new(),
+            properties: BTreeMap::new(),
         };
 
         let e2 = Entity {
             id: Uuid::new_v4(),
             name: "Widgets Inc".into(),
             entity_type: EntityType::Company,
-            properties: HashMap::new(),
+            properties: BTreeMap::new(),
         };
 
         let relationship = Fact::RelationshipAdded {

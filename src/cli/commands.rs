@@ -2,7 +2,7 @@ use std::io::{self, Write};
 use std::str::FromStr;
 use uuid::Uuid;
 use chrono::prelude::*;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::graph::{EntityType, RelationshipType, Entity, Relationship};
 use crate::graph::fact::{Fact, FactStore};
@@ -66,7 +66,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                             id: Uuid::new_v4(),
                             name: name.to_string(),
                             entity_type: etype,
-                            properties: HashMap::new()
+                            properties: BTreeMap::new()
                         };
                         let fact_store = FactStore {
                             entities: vec![entity.clone()],
