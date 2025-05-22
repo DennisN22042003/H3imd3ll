@@ -9,3 +9,4 @@ serde_json = { version = "1.0" }
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
 petgraph = { version = "0.8.1", features = ["serde-1"] }
 chrono = { version = "0.4.41", features = ["serde"] }
+cli-animate = { version = "0.1.0" }

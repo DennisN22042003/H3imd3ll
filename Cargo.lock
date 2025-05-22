@@ -72,6 +72,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cli-animate"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5516410a598ee215f57e964a65536f8df5cb0c172b7fdaba0f35ced457e1a420"
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -112,6 +118,7 @@ name = "h3imd3ll"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "cli-animate",
  "petgraph",
  "serde",
  "serde_json",

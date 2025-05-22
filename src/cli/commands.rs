@@ -3,11 +3,12 @@ use std::str::FromStr;
 use uuid::Uuid;
 use chrono::prelude::*;
 use std::collections::{BTreeMap, HashMap};
-
 use crate::graph::{EntityType, RelationshipType, Entity, Relationship};
 use crate::graph::fact::{Fact, FactStore};
 use crate::graph::GraphDb;
 use crate::engine::case::{display_case, CaseBuilder};
+use crate::cli::utils;
+use crate::cli::utils::{CYAN, GREEN, MAGENTA, RED, RESET, YELLOW};
 
 fn find_entity_by_name<'a>(db: &'a GraphDb, name: &str) -> Option<&'a Entity> {
     db.graph.node_weights().find(|e| e.name == name)
@@ -27,6 +28,23 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
             Err(e) => println!("Failed to load graph from file: {}", e),
         }
     }
+    println!();
+    println!(
+        "{}{}{}",
+        CYAN,
+        r#"
+                           *************************************************************************
+                           * __  __     __   ______            ____       __    __       __        *
+                           */\ \/\ \  /'__`\/\__  _\   /'\_/`\/\  _`\   /'__`\ /\ \     /\ \       *
+                           *\ \ \_\ \/\_\L\ \/_/\ \/  /\      \ \ \/\ \/\_\L\ \\ \ \    \ \ \      *
+                           * \ \  _  \/_/_\_<_ \ \ \  \ \ \__\ \ \ \ \ \/_/_\_<_\ \ \  __\ \ \  __ *
+                           *  \ \ \ \ \/\ \L\ \ \_\ \__\ \ \_/\ \ \ \_\ \/\ \L\ \\ \ \L\ \\ \ \L\ \*
+                           *   \ \_\ \_\ \____/ /\_____\\ \_\\ \_\ \____/\ \____/ \ \____/ \ \____/*
+                           *    \/_/\/_/\/___/  \/_____/ \/_/ \/_/\/___/  \/___/   \/___/   \/___/ *
+                           *************************************************************************
+        "#,
+        RESET,
+    );
 
     let stdin = io::stdin();
     let mut stdout = io::stdout();
@@ -34,7 +52,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
 
     loop {
         input.clear();
-        print!("h3imd3ll> ");
+        print!("{}🔍 h3imd3ll> {} ", CYAN, RESET);
         stdout.flush()?;  // Make sure prompt is printed
 
         if stdin.read_line(&mut input)? == 0 {
@@ -56,7 +74,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
         match cmd.to_lowercase().as_str() {
             "add-entity" => {
                 if args.len() < 2 {
-                    println!("Usage: add-entity <name> <entity_type>");
+                    println!("{}Usage: add-entity <name> <entity_type> {}", GREEN, RESET);
                     continue;
                 }
                 let name = args[0];
@@ -79,16 +97,16 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                             }]
                         };
                         db.add_fact(fact_store);
-                        println!("Entity '{}' added with ID {}", name, entity_id);
+                        println!("{}Entity '{}' added with ID {}{}", GREEN, name, entity_id, RESET);
                     }
                     Err(_) => {
-                        println!("Invalid entity type: {}", entity_type_str);
+                        println!("{}Invalid entity type: {}{}", RED, entity_type_str, RESET);
                     }
                 }
             }
             "add-fact" => {
                 if args.len() < 3 {
-                    println!("Usage: add-fact <subject> <predicate> <object>");
+                    println!("{}Usage: add-fact <subject> <predicate> <object> {}", GREEN, RESET);
                     continue;
                 }
                 let subject = args[0];
@@ -122,19 +140,19 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                         };
                         
                         db.add_fact(fact_store);
-                        println!("Relationship '{}' -> '{}' added.", subject, object);
+                        println!("{}Relationship '{}' -> '{}' added.{}", GREEN, subject, object, RESET);
                     }
                     Err(_) => {
-                        println!("Invalid relationship type: {}", predicate);
+                        println!("{}Invalid relationship type: {}{}", RED, predicate, RESET);
                     }
                 }
             }
             "query" => {
-                println!("Query feature is not implemented yet.");
+                println!("{}Query feature is not implemented yet.{}", RED, RESET);
             }
             "build-case" => {
                 if args.len() < 1 {
-                    println!("Usage: build-case <case_name>");
+                    println!("{}Usage: build-case <case_name>{}", GREEN, RESET);
                     continue;
                 }
                 
@@ -157,40 +175,58 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                     display_case(&case, &db);
                     
                 } else {
-                    println!("Entity '{}' not found.", seed_name);
+                    println!("{}Entity '{}' not found.{}", RED, seed_name, RESET);
                 }
             }
             "save" => {
                 match db.persist_facts(data_file) {
-                    Ok(_) => println!("Graph saved to {}", data_file),
-                    Err(e) => println!("Failed to save graph: {}", e),
+                    Ok(_) => println!("{}Graph saved to {}{}", GREEN, data_file, RESET),
+                    Err(e) => println!("{}Failed to save graph: {}{}", RED, e, RESET),
                 }
             }
             "load" => {
                 match GraphDb::load_from_file(data_file) {
                     Ok(loaded_db) => {
                         db = loaded_db;
-                        println!("Graph loaded from {}", data_file);
+                        println!("{}Graph loaded from {}{}", GREEN, data_file, RESET);
                     }
-                    Err(e) => println!("Failed to load graph: {}", e),
+                    Err(e) => println!("{}Failed to load graph: {}{}", RED, e, RESET),
                 }
             }
             "help" => {
-                println!("Available commands:");
-                println!("  add-entity <name> <entity_type>");
-                println!("  add-fact <subject> <predicate> <object>");
-                println!("  query <query>");
-                println!("  build-case <case_name> [max_depth]");
-                println!("  save");
-                println!("  load");
-                println!("  exit");
+                println!("{}Available commands:{}", GREEN, RESET);
+                println!("{}-------------------------------------------------------------------------------------------{}", GREEN, RESET);
+                println!("  {}add-entity{}      <name> <entity_type>                - Add a new entity", GREEN, RESET);
+                println!("  {}add-fact{}        <subject> <predicate> <object>      - Add a new fact", GREEN, RESET);
+                //println!("  query <query>");
+                println!("  {}build-case{}      <case_name> [max_depth]             - Generate a case from an entity", GREEN, RESET);
+                println!("  {}save{}                                                - Save the current graph to a file", YELLOW, RESET);
+                println!("  {}load{}                                                - Load graph from a file", CYAN, RESET);
+                println!("  {}exit{}                                                - Exit the CLI", RED, RESET);
+                println!("{}--------------------------------------------------------------------------------------------{}", GREEN, RESET);
             }
             "exit" | "quit" => {
-                println!("Exiting...");
+                println!("{}Exiting...{}", RED, RESET);
+                println!(
+                    "{}{}{}",
+                    RED,
+                    r#"
+                                    ****************************************************************
+                                    * ____    _____   _____   ____    ____     __    __  ____      *
+                                    */\  _`\ /\  __`\/\  __`\/\  _`\ /\  _`\  /\ \  /\ \/\  _`\    *
+                                    *\ \ \L\_\ \ \/\ \ \ \/\ \ \ \/\ \ \ \L\ \\ `\`\\/'/\ \ \L\_\  *
+                                    * \ \ \L_L\ \ \ \ \ \ \ \ \ \ \ \ \ \  _ <'`\ `\ /'  \ \  _\L  *
+                                    *  \ \ \/, \ \ \_\ \ \ \_\ \ \ \_\ \ \ \L\ \ `\ \ \   \ \ \L\ \*
+                                    *   \ \____/\ \_____\ \_____\ \____/\ \____/   \ \_\   \ \____/*
+                                    *    \/___/  \/_____/\/_____/\/___/  \/___/     \/_/    \/___/ *
+                                    **************************************************************** 
+                    "#,
+                    RESET,
+                );
                 break;
             }
             _ => {
-                println!("Unknown command '{}'. Type 'help' for a list of commands.", cmd);
+                println!("{}Unknown command '{}'. Type 'help' for a list of commands.{}", RED, cmd, RESET);
             }
         }
     }
