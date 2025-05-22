@@ -63,18 +63,23 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                 let entity_type_str = args[1];
                 match EntityType::from_str(entity_type_str) {
                     Ok(etype) => {
-                        let entity = Entity {
-                            id: Uuid::new_v4(),
-                            name: name.to_string(),
-                            entity_type: etype,
-                            properties: BTreeMap::new()
-                        };
+                        let entity_id = Uuid::new_v4();
+                        
+                        // Build properties map with required keys
+                        let mut properties = BTreeMap::new();
+                        properties.insert("name".to_string(), name.to_string());
+                        properties.insert("type".to_string(), entity_type_str.to_string());
+                        
+                        // Create the fact store with EntityCreated fact carrying these
                         let fact_store = FactStore {
-                            entities: vec![entity.clone()],
-                            relationships: vec![],
+                            facts: vec![Fact::EntityCreated {
+                                entity_id,
+                                timestamp: Local::now(),
+                                properties,
+                            }]
                         };
                         db.add_fact(fact_store);
-                        println!("Entity '{}' added with ID {}", entity.name, entity.id);
+                        println!("Entity '{}' added with ID {}", name, entity_id);
                     }
                     Err(_) => {
                         println!("Invalid entity type: {}", entity_type_str);
@@ -113,8 +118,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                             valid_to: None,
                         };
                         let fact_store = FactStore {
-                            entities: vec![],
-                            relationships: vec![relationship_fact],
+                            facts: vec![relationship_fact]
                         };
                         
                         db.add_fact(fact_store);

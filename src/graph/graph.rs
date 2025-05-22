@@ -106,11 +106,7 @@ impl GraphDb {
     }
 
     pub fn add_fact(&mut self, fact_store: FactStore) {
-        for entity in fact_store.entities {
-            self.add_entity(entity);
-        }
-
-        for fact in fact_store.relationships.clone() {
+        for fact in fact_store.facts.clone() {
             match &fact {
                 Fact::EntityCreated {
                     entity_id,
@@ -197,10 +193,10 @@ impl GraphDb {
         let event_log: Vec<Fact> = serde_json::from_str(&content)?;
 
         let mut db = GraphDb::new();
+        
         for fact in event_log.iter() {
             db.add_fact(FactStore {
-                entities: vec![],
-                relationships: vec![fact.clone()],
+                facts: event_log.clone(),
             });
         }
 
@@ -222,38 +218,50 @@ mod tests {
     fn test_graph_db_basic_flow() {
         let mut db = GraphDb::new();
 
-        let e1 = Entity {
-            id: Uuid::new_v4(),
-            name: "John Doe".into(),
-            entity_type: EntityType::Person,
-            properties: BTreeMap::new(),
+        let e1_id = Uuid::new_v4();
+        let e2_id = Uuid::new_v4();
+
+        let e1_props = {
+            let mut props = BTreeMap::new();
+            props.insert("name".into(), "John Doe".into());
+            props
         };
 
-        let e2 = Entity {
-            id: Uuid::new_v4(),
-            name: "Widgets Inc".into(),
-            entity_type: EntityType::Company,
-            properties: BTreeMap::new(),
+        let e2_props = {
+            let mut props = BTreeMap::new();
+            props.insert("name".into(), "Widgets Inc".into());
+            props
         };
 
-        let relationship = Fact::RelationshipAdded {
-            source_id: e1.id,
-            target_id: e2.id,
-            relationship_type: RelationshipType::WorksAt.to_string(),
-            timestamp: DateTime::from(Local::now()),
-            valid_from: 2021,
-            valid_to: None,
-        };
+        let timestamp = DateTime::from(Local::now());
 
-        let store = FactStore {
-            entities: vec![e1.clone(), e2.clone()],
-            relationships: vec![relationship],
-        };
+        let facts = vec![
+            Fact::EntityCreated {
+                entity_id: e1_id,
+                timestamp,
+                properties: e1_props.clone(),
+            },
+            Fact::EntityCreated {
+                entity_id: e2_id,
+                timestamp,
+                properties: e2_props.clone(),
+            },
+            Fact::RelationshipAdded {
+                source_id: e1_id,
+                target_id: e2_id,
+                relationship_type: RelationshipType::WorksAt.to_string(),
+                timestamp,
+                valid_from: 2021,
+                valid_to: None,
+            },
+        ];
+
+        let store = FactStore { facts };
 
         db.add_fact(store);
 
-        let outgoing = db.get_outgoing_neighbours(&e1.id);
-        let incoming = db.get_incoming_neighbours(&e2.id);
+        let outgoing = db.get_outgoing_neighbours(&e1_id);
+        let incoming = db.get_incoming_neighbours(&e2_id);
 
         assert_eq!(outgoing.len(), 1);
         assert_eq!(incoming.len(), 1);

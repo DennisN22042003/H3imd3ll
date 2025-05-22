@@ -66,6 +66,7 @@ impl Fact {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FactStore {
-    pub entities: Vec<Entity>,
-    pub relationships: Vec<Fact>,
+    pub facts: Vec<Fact>,
+    //pub entities: Vec<Entity>,
+    //pub relationships: Vec<Fact>,
 }
