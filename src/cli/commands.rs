@@ -7,6 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 use crate::graph::{EntityType, RelationshipType, Entity, Relationship};
 use crate::graph::fact::{Fact, FactStore};
 use crate::graph::GraphDb;
+use crate::engine::case::{display_case, CaseBuilder};
 
 fn find_entity_by_name<'a>(db: &'a GraphDb, name: &str) -> Option<&'a Entity> {
     db.graph.node_weights().find(|e| e.name == name)
@@ -127,6 +128,34 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
             "query" => {
                 println!("Query feature is not implemented yet.");
             }
+            "build-case" => {
+                if args.len() < 1 {
+                    println!("Usage: build-case <case_name>");
+                    continue;
+                }
+                
+                let seed_name = args[0];
+                let depth = if args.len() > 1 {
+                    args[1].parse::<usize>().unwrap_or(2)
+                } else {
+                    2
+                };
+                
+                if let Some(seed_entity) = find_entity_by_name(&db, seed_name) {
+                    let builder = CaseBuilder::new(&db, seed_entity.id)
+                        .with_max_depth(depth);
+                    
+                    let case = builder.build(
+                        &format!("Case around '{}'", seed_name),
+                        "Auto-generated case from CLI",
+                    );
+                    
+                    display_case(&case, &db);
+                    
+                } else {
+                    println!("Entity '{}' not found.", seed_name);
+                }
+            }
             "save" => {
                 match db.persist_facts(data_file) {
                     Ok(_) => println!("Graph saved to {}", data_file),
@@ -147,6 +176,7 @@ pub fn run_h3imd3ll_repl() -> io::Result<()> {
                 println!("  add-entity <name> <entity_type>");
                 println!("  add-fact <subject> <predicate> <object>");
                 println!("  query <query>");
+                println!("  build-case <case_name> [max_depth]");
                 println!("  save");
                 println!("  load");
                 println!("  exit");

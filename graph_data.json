@@ -38,5 +38,15 @@
       "valid_from": 2025,
       "valid_to": null
     }
+  },
+  {
+    "RelationshipAdded": {
+      "source_id": "75dcb313-1044-41e1-88d5-41f26142c92c",
+      "target_id": "b2ad9d1d-00d2-4903-8297-f4cd05187d0c",
+      "relationship_type": "LocatedAt",
+      "timestamp": "2025-05-22T14:45:00.116846900+03:00",
+      "valid_from": 2025,
+      "valid_to": null
+    }
   }
 ]
